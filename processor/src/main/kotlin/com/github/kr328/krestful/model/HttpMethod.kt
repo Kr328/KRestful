@@ -6,6 +6,5 @@ sealed class HttpMethod {
     object PUT : HttpMethod()
     object PATCH : HttpMethod()
     object DELETE : HttpMethod()
-
-    data class Custom(val value: String) : HttpMethod()
+    object WebSocket : HttpMethod()
 }

@@ -24,7 +24,6 @@ fun KSFunctionDeclaration.collectRawCall(): RawCall {
         annotations[Types.PUT],
         annotations[Types.PATCH],
         annotations[Types.DELETE],
-        annotations[Types.Request],
         annotations[Types.WebSocket],
     )
 }

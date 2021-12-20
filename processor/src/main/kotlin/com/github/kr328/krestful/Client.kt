@@ -1,21 +1,16 @@
 package com.github.kr328.krestful
 
-import com.github.kr328.krestful.client.buildOutgoing
-import com.github.kr328.krestful.client.buildRequest
-import com.github.kr328.krestful.client.buildResult
-import com.github.kr328.krestful.model.Call
-import com.github.kr328.krestful.model.Members
-import com.github.kr328.krestful.model.Types
+import com.github.kr328.krestful.client.*
+import com.github.kr328.krestful.common.mappingBlock
+import com.github.kr328.krestful.common.methodBlock
+import com.github.kr328.krestful.model.*
 import com.github.kr328.krestful.util.*
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ksp.toClassName
 
 object Client {
-    fun generateClientClass(
+    fun generateClientFile(
         original: KSClassDeclaration,
         calls: List<Call>
     ): FileSpec {
@@ -32,31 +27,67 @@ object Client {
             }
 
             func.addCode {
-                val utilName = if (it.isWebSocket) Members.webSocket else Members.request
+                val (format: String, args: Array<Any>) = if (it.method == HttpMethod.WebSocket) {
+                    val format = """
+                        return %M(
+                          context = context,
+                          json = json,
+                          url = baseUrl,
+                          path = "%L",
+                          returning = %L,
+                        )
+                    """.trimIndent()
+                    val args = arrayOf(
+                        Members.webSocket,
+                        it.path.urlBlock(),
+                        (it.returning as ParameterizedTypeName).typeArguments[0].mappingBlock()
+                    )
 
-                controlFlow("return %M(baseUrl, context)", utilName) {
-                    controlFlow("request") {
-                        buildRequest(it)
-                    }
+                    format to args
+                } else {
+                    val format = """
+                        return %M(
+                          context = context,
+                          json = json,
+                          url = baseUrl,
+                          path = "%L",
+                          method = %L,
+                          returning = %L,
+                        )
+                    """.trimIndent()
+                    val args = arrayOf(
+                        Members.request,
+                        it.path.urlBlock(),
+                        it.method.methodBlock(),
+                        it.returning.mappingBlock()
+                    )
 
-                    if (it.isWebSocket) {
-                        controlFlow("outgoing") {
-                            buildOutgoing(it)
-                        }
-                    }
+                    format to args
                 }
 
-                val mapping = if (it.isWebSocket) Members.map else Members.let
-
-                controlFlow(".%M", mapping) {
-                    buildResult(it)
+                controlFlow(format, *args) {
+                    it.arguments.forEach { arg ->
+                        when (arg.descriptor) {
+                            Argument.Descriptor.Body ->
+                                addBody(arg.name, arg.type)
+                            Argument.Descriptor.Outgoing ->
+                                addOutgoing(arg.name, arg.type)
+                            is Argument.Descriptor.Field ->
+                                addField(arg.name, arg.type, arg.descriptor.key)
+                            is Argument.Descriptor.Header ->
+                                addHeader(arg.name, arg.descriptor.key)
+                            is Argument.Descriptor.Query ->
+                                addQuery(arg.name, arg.descriptor.key)
+                            is Argument.Descriptor.Path -> Unit
+                        }
+                    }
                 }
             }
 
             clazz.addFunction(func.build())
         }
 
-        val factory = FunSpec.builder("create${original.simpleName.asString()}Proxy")
+        val func = FunSpec.builder("create${original.simpleName.asString()}Proxy")
             .addGenerated()
             .receiver(Types.HttpClient)
             .returns(original.toClassName())
@@ -67,13 +98,13 @@ object Client {
                 addStatement("return %L", clazz.build())
             }
 
-        return FileSpec.builder(original.packageName.asString(), original.simpleName.asString())
+        return FileSpec.builder(original.packageName.asString(), original.simpleName.asString() + "Proxy")
             .addSuppress(
                 "PARAMETER_NAME_CHANGED_ON_OVERRIDE",
                 "RedundantVisibilityModifier",
                 "LocalVariableName"
             )
-            .addFunction(factory.build())
+            .addFunction(func.build())
             .build()
     }
 }

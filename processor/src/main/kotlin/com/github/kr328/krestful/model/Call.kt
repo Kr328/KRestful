@@ -10,5 +10,4 @@ data class Call(
     val returning: TypeName,
     val method: HttpMethod,
     val path: UrlTemplate,
-    val isWebSocket: Boolean,
 )

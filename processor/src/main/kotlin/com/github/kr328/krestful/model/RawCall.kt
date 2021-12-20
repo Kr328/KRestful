@@ -13,6 +13,5 @@ data class RawCall(
     val put: Annotation?,
     val patch: Annotation?,
     val delete: Annotation?,
-    val request: Annotation?,
     val webSocket: Annotation?,
 )

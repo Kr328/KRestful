@@ -52,10 +52,19 @@ class Processor(
 
             if (generateClient) {
                 try {
-                    Client.generateClientClass(clazz, calls)
+                    Client.generateClientFile(clazz, calls)
                         .writeTo(generator, Dependencies(false, clazz.containingFile!!))
                 } catch (e: Exception) {
                     logger.error("Generate client class ${clazz.simpleName.asString()}: $e", symbol)
+                }
+            }
+
+            if (generateServer) {
+                try {
+                    Server.generateServerFile(clazz, calls)
+                        .writeTo(generator, Dependencies(false, clazz.containingFile!!))
+                } catch (e: Exception) {
+                    logger.error("Generate server class ${clazz.simpleName.asString()}: $e", symbol)
                 }
             }
         }
