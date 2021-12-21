@@ -183,15 +183,11 @@ suspend fun <T> HttpClient.request(
 
             returning.mappingToValue(Content.Binary(response.readBytes(), response.contentType() ?: ContentType.Any))
         } catch (e: KResponseException) {
-            throw ResponseException(
-                e.response.status,
-                ByteArrayContent(e.response.readBytes(), e.response.contentType(), e.response.status),
-                e
-            )
+            throw ResponseException(e.response.status, e)
         } catch (e: SerializationException) {
-            throw ResponseException(HttpStatusCode.NotFound, cause = e)
+            throw ResponseException(HttpStatusCode.NotFound, e)
         } catch (e: NumberFormatException) {
-            throw ResponseException(HttpStatusCode.NotFound, cause = e)
+            throw ResponseException(HttpStatusCode.NotFound, e)
         }
     }
 }
@@ -213,6 +209,12 @@ fun <T> HttpClient.webSocket(
                     takeFrom(url)
 
                     pathComponents(path)
+
+                    protocol = if (protocol.isSecure()) {
+                        URLProtocol.WSS
+                    } else {
+                        URLProtocol.WS
+                    }
                 }
 
                 metadata.applyTo(json, this)
@@ -251,15 +253,11 @@ fun <T> HttpClient.webSocket(
                 }
             }
         } catch (e: KResponseException) {
-            throw ResponseException(
-                e.response.status,
-                ByteArrayContent(e.response.readBytes(), e.response.contentType(), e.response.status),
-                e
-            )
+            throw ResponseException(e.response.status, e)
         } catch (e: SerializationException) {
-            throw ResponseException(HttpStatusCode.NotFound, cause = e)
+            throw ResponseException(HttpStatusCode.NotFound, e)
         } catch (e: NumberFormatException) {
-            throw ResponseException(HttpStatusCode.NotFound, cause = e)
+            throw ResponseException(HttpStatusCode.NotFound, e)
         }
     }.flowOn(context)
 }

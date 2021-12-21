@@ -3,7 +3,6 @@ package com.github.kr328.krestful.internal
 import com.github.kr328.krestful.Content
 import com.github.kr328.krestful.ResponseException
 import io.ktor.application.*
-import io.ktor.client.utils.*
 import io.ktor.http.*
 import io.ktor.http.cio.websocket.*
 import io.ktor.http.content.*
@@ -59,7 +58,9 @@ class ResponseScope(
 
     suspend fun <T> field(key: String, mapping: Mapping<T>): T? {
         if (fields == null) {
-            if (call.request.contentType() != ContentType.Application.Json) {
+            val contentType = call.request.contentType()
+
+            if (contentType != ContentType.Application.Json || contentType != ContentType.Any) {
                 throw SerializationException()
             }
 
@@ -129,7 +130,7 @@ fun <T> Route.withRequest(
             } catch (e: SerializationException) {
                 call.respond(HttpStatusCode.BadRequest)
             } catch (e: ResponseException) {
-                call.respond(e.status, e.content ?: EmptyContent)
+                call.respond(e.status)
             }
         }
     }
@@ -156,7 +157,7 @@ fun <T> Route.withWebSocket(
         } catch (e: SerializationException) {
             call.respond(HttpStatusCode.BadRequest)
         } catch (e: ResponseException) {
-            call.respond(e.status, e.content ?: EmptyContent)
+            call.respond(e.status)
         }
     }
 }

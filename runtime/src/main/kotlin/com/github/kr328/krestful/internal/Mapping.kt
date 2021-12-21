@@ -125,7 +125,7 @@ sealed class Mapping<T> {
 
     class SerializableJson<T>(val json: Json, val serializer: KSerializer<T>) : Mapping<T>() {
         override fun mappingToValue(content: Content): T {
-            if (content.contentType != ContentType.Application.Json) {
+            if (content.contentType != ContentType.Application.Json && content.contentType != ContentType.Any) {
                 throw SerializationException("Unsupported Content-Type: ${content.contentType}")
             }
 
