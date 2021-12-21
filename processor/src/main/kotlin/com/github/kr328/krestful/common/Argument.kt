@@ -1,23 +1,37 @@
-package com.github.kr328.krestful.util
+package com.github.kr328.krestful.common
 
 import com.github.kr328.krestful.model.Argument
-import com.github.kr328.krestful.model.RawArgument
-import com.github.kr328.krestful.model.Types
-import com.squareup.kotlinpoet.STRING
+import com.github.kr328.krestful.util.collectAnnotations
+import com.github.kr328.krestful.util.ifNullOrEmpty
+import com.google.devtools.ksp.symbol.KSValueParameter
+import com.squareup.kotlinpoet.ksp.toTypeName
 
-fun RawArgument.toArgument(): Argument {
+fun KSValueParameter.collectArgument(): Argument.Raw {
+    val name = name!!.asString()
+    val type = type.toTypeName()
+    val annotations = collectAnnotations()
+
+    return Argument.Raw(
+        name,
+        type,
+        annotations[Types.Header],
+        annotations[Types.Query],
+        annotations[Types.Field],
+        annotations[Types.Path],
+        annotations[Types.Body],
+        annotations[Types.Outgoing],
+    )
+}
+
+fun Argument.Raw.refine(): Argument {
     val annotations = listOfNotNull(header, field, body, query, path)
-    if (annotations.size != 1) {
-        error("Invalid method parameter descriptors: $annotations")
+    require(annotations.size == 1) {
+        "Duplicate or empty argument descriptors: $annotations"
     }
 
     val annotation = annotations.single()
     val descriptor = when (annotation.type) {
         Types.Header -> {
-            require(type != STRING) {
-                "Invalid header parameter type: $type, requires String"
-            }
-
             Argument.Descriptor.Header(
                 (annotation.values["key"] as? String).ifNullOrEmpty { name }
             )

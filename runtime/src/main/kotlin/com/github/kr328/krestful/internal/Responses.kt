@@ -70,12 +70,12 @@ class ResponseScope(
 
         @Suppress("UNCHECKED_CAST")
         return when (mapping) {
-            Mapping.BinaryContent -> {
+            Mapping.ContentBinary -> {
                 val bytes = (element as JsonPrimitive).contentOrNull?.toByteArray() ?: return null
 
                 Content.Binary(bytes, ContentType.Any) as T
             }
-            Mapping.TextContent -> {
+            Mapping.ContentText -> {
                 val text = (element as JsonPrimitive).contentOrNull ?: return null
 
                 Content.Text(text, ContentType.Any) as T

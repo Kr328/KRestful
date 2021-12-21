@@ -79,13 +79,13 @@ class RequestScope {
 
     fun <T> field(key: String, value: T, mapping: Mapping<T>) {
         when (mapping) {
-            Mapping.BinaryContent -> {
+            Mapping.ContentBinary -> {
                 val content = (value as Content.Binary)
                 val charset = content.contentType.charset() ?: Charsets.UTF_8
 
                 fields[key] = JsonPrimitive(content.bytes.toString(charset))
             }
-            Mapping.TextContent -> {
+            Mapping.ContentText -> {
                 fields[key] = JsonPrimitive((value as Content.Text).text)
             }
             Mapping.String -> {

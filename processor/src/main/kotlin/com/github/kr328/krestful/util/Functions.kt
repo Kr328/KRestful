@@ -1,22 +1,11 @@
 package com.github.kr328.krestful.util
 
 import com.github.kr328.krestful.Processor
-import com.google.devtools.ksp.getDeclaredFunctions
-import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.squareup.kotlinpoet.*
 import java.time.Clock
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import javax.annotation.processing.Generated
-
-fun KSClassDeclaration.getAllFunctionsExceptAny(): Sequence<KSFunctionDeclaration> = sequence {
-    yieldAll(getDeclaredFunctions())
-
-    superTypes.mapNotNull { it.resolve().declaration as? KSClassDeclaration }.forEach {
-        yieldAll(it.getAllFunctionsExceptAny())
-    }
-}
 
 inline fun FunSpec.Builder.addCode(block: CodeBlock.Builder.() -> Unit) =
     addCode(buildCodeBlock(block))

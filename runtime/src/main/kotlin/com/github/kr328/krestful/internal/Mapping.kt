@@ -26,7 +26,7 @@ sealed class Mapping<T> {
 
     object Int : Mapping<kotlin.Int>() {
         override fun mappingToValue(content: Content): kotlin.Int {
-            return TextContent.mappingToValue(content).text.toInt()
+            return ContentText.mappingToValue(content).text.toInt()
         }
 
         override fun mappingToContent(value: kotlin.Int): Content {
@@ -36,7 +36,7 @@ sealed class Mapping<T> {
 
     object Long : Mapping<kotlin.Long>() {
         override fun mappingToValue(content: Content): kotlin.Long {
-            return TextContent.mappingToValue(content).text.toLong()
+            return ContentText.mappingToValue(content).text.toLong()
         }
 
         override fun mappingToContent(value: kotlin.Long): Content {
@@ -46,7 +46,7 @@ sealed class Mapping<T> {
 
     object Float : Mapping<kotlin.Float>() {
         override fun mappingToValue(content: Content): kotlin.Float {
-            return TextContent.mappingToValue(content).text.toFloat()
+            return ContentText.mappingToValue(content).text.toFloat()
         }
 
         override fun mappingToContent(value: kotlin.Float): Content {
@@ -56,7 +56,7 @@ sealed class Mapping<T> {
 
     object Double : Mapping<kotlin.Double>() {
         override fun mappingToValue(content: Content): kotlin.Double {
-            return TextContent.mappingToValue(content).text.toDouble()
+            return ContentText.mappingToValue(content).text.toDouble()
         }
 
         override fun mappingToContent(value: kotlin.Double): Content {
@@ -66,7 +66,7 @@ sealed class Mapping<T> {
 
     object Boolean : Mapping<kotlin.Boolean>() {
         override fun mappingToValue(content: Content): kotlin.Boolean {
-            return TextContent.mappingToValue(content).text.toBoolean()
+            return ContentText.mappingToValue(content).text.toBoolean()
         }
 
         override fun mappingToContent(value: kotlin.Boolean): Content {
@@ -76,7 +76,7 @@ sealed class Mapping<T> {
 
     object String : Mapping<kotlin.String>() {
         override fun mappingToValue(content: Content): kotlin.String {
-            return TextContent.mappingToValue(content).text
+            return ContentText.mappingToValue(content).text
         }
 
         override fun mappingToContent(value: kotlin.String): Content {
@@ -86,7 +86,7 @@ sealed class Mapping<T> {
 
     object ByteArray : Mapping<kotlin.ByteArray>() {
         override fun mappingToValue(content: Content): kotlin.ByteArray {
-            return BinaryContent.mappingToValue(content).bytes
+            return ContentBinary.mappingToValue(content).bytes
         }
 
         override fun mappingToContent(value: kotlin.ByteArray): Content {
@@ -94,7 +94,7 @@ sealed class Mapping<T> {
         }
     }
 
-    object TextContent : Mapping<Content.Text>() {
+    object ContentText : Mapping<Content.Text>() {
         override fun mappingToValue(content: Content): Content.Text {
             return when (content) {
                 is Content.Binary -> Content.Text(
@@ -110,7 +110,7 @@ sealed class Mapping<T> {
         }
     }
 
-    object BinaryContent : Mapping<Content.Binary>() {
+    object ContentBinary : Mapping<Content.Binary>() {
         override fun mappingToValue(content: Content): Content.Binary {
             return when (content) {
                 is Content.Binary -> content
@@ -130,7 +130,7 @@ sealed class Mapping<T> {
             }
 
             val text = when (content) {
-                is Content.Binary -> TextContent.mappingToValue(content).text
+                is Content.Binary -> ContentText.mappingToValue(content).text
                 is Content.Text -> content.text
             }
 

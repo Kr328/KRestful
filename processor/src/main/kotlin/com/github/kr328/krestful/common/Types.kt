@@ -1,4 +1,4 @@
-package com.github.kr328.krestful.model
+package com.github.kr328.krestful.common
 
 import com.squareup.kotlinpoet.ClassName
 
@@ -20,12 +20,12 @@ object Types {
     val ContentText = ClassName("com.github.kr328.krestful", "Content", "Text")
     val ContentBinary = ClassName("com.github.kr328.krestful", "Content", "Binary")
     val Flow = ClassName("kotlinx.coroutines.flow", "Flow")
+    val Dispatchers = ClassName("kotlinx.coroutines", "Dispatchers")
+    val CoroutineContext = ClassName("kotlin.coroutines", "CoroutineContext")
     val Url = ClassName("io.ktor.http", "Url")
+    val Route = ClassName("io.ktor.routing", "Route")
     val HttpClient = ClassName("io.ktor.client", "HttpClient")
+    val HttpMethod = ClassName("io.ktor.http", "HttpMethod")
     val Serializable = ClassName("kotlinx.serialization", "Serializable")
     val Json = ClassName("kotlinx.serialization.json", "Json")
-    val CoroutineContext = ClassName("kotlin.coroutines", "CoroutineContext")
-    val HttpMethod = ClassName("io.ktor.http", "HttpMethod")
-    val Dispatchers = ClassName("kotlinx.coroutines", "Dispatchers")
-    val Route = ClassName("io.ktor.routing", "Route")
 }

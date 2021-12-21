@@ -1,6 +1,6 @@
 package com.github.kr328.krestful.server
 
-import com.github.kr328.krestful.model.Members
+import com.github.kr328.krestful.common.Members
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.buildCodeBlock

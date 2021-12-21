@@ -1,19 +1,18 @@
 package com.github.kr328.krestful.client
 
-import com.github.kr328.krestful.model.UrlTemplate
-import com.github.kr328.krestful.model.UrlTemplate.Segment.Literal
-import com.github.kr328.krestful.model.UrlTemplate.Segment.Variable
+import com.github.kr328.krestful.model.Path
+import com.github.kr328.krestful.model.Path.Segment.Literal
+import com.github.kr328.krestful.model.Path.Segment.Variable
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.buildCodeBlock
 
-fun UrlTemplate.urlBlock(): CodeBlock {
-    return buildCodeBlock {
-        val text = segments.joinToString("") {
+val Path.templateCode: CodeBlock
+    get() = buildCodeBlock {
+        val text = joinToString("", prefix = "\"", postfix = "\"") {
             when (it) {
                 is Literal -> it.value
                 is Variable -> "\${%N}"
             }
         }
-        add(text, *segments.filterIsInstance<Variable>().map(Variable::name).toTypedArray())
+        add(text, *filterIsInstance<Variable>().map(Variable::name).toTypedArray())
     }
-}

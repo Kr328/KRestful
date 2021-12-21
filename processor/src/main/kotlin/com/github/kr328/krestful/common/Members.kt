@@ -1,4 +1,4 @@
-package com.github.kr328.krestful.model
+package com.github.kr328.krestful.common
 
 import com.squareup.kotlinpoet.MemberName
 

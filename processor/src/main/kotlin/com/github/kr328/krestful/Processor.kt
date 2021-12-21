@@ -1,9 +1,11 @@
 package com.github.kr328.krestful
 
-import com.github.kr328.krestful.model.Types
-import com.github.kr328.krestful.util.collectRawCall
+import com.github.kr328.krestful.client.generateClientFile
+import com.github.kr328.krestful.common.Types
+import com.github.kr328.krestful.common.collectRequest
+import com.github.kr328.krestful.common.refine
+import com.github.kr328.krestful.server.generateServerFile
 import com.github.kr328.krestful.util.getAllFunctionsExceptAny
-import com.github.kr328.krestful.util.toCall
 import com.google.devtools.ksp.getClassDeclarationByName
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.ClassKind
@@ -36,23 +38,21 @@ class Processor(
                 clazz.getAllFunctionsExceptAny()
                     .map {
                         try {
-                            it.collectRawCall().toCall(resolver)
+                            it.collectRequest().refine(resolver)
                         } catch (e: Exception) {
-                            logger.error("$e", it)
+                            logger.error("${e.message}", it)
 
                             throw e
                         }
                     }
                     .toList()
             } catch (e: Exception) {
-                logger.error("Parse interface ${clazz.simpleName.asString()}: $e", clazz)
-
                 continue
             }
 
             if (generateClient) {
                 try {
-                    Client.generateClientFile(clazz, calls)
+                    clazz.generateClientFile(calls)
                         .writeTo(generator, Dependencies(false, clazz.containingFile!!))
                 } catch (e: Exception) {
                     logger.error("Generate client class ${clazz.simpleName.asString()}: $e", symbol)
@@ -61,7 +61,7 @@ class Processor(
 
             if (generateServer) {
                 try {
-                    Server.generateServerFile(clazz, calls)
+                    clazz.generateServerFile(calls)
                         .writeTo(generator, Dependencies(false, clazz.containingFile!!))
                 } catch (e: Exception) {
                     logger.error("Generate server class ${clazz.simpleName.asString()}: $e", symbol)
