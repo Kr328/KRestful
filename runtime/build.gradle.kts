@@ -2,6 +2,12 @@ plugins {
     kotlin("jvm")
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
 dependencies {
     compileOnly(deps.ktor.client.core)
     compileOnly(deps.ktor.client.websockets)

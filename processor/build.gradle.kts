@@ -6,7 +6,10 @@ plugins {
 }
 
 tasks.withType<KotlinCompile>().configureEach {
-    kotlinOptions.freeCompilerArgs += "-opt-in=com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview"
+    kotlinOptions {
+        freeCompilerArgs = freeCompilerArgs + "-opt-in=com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview"
+        jvmTarget = "1.8"
+    }
 }
 
 dependencies {
