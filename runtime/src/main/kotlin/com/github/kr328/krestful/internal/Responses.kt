@@ -1,5 +1,6 @@
 package com.github.kr328.krestful.internal
 
+import com.github.kr328.krestful.ApplicationCall
 import com.github.kr328.krestful.Content
 import com.github.kr328.krestful.ResponseException
 import io.ktor.application.*
@@ -14,23 +15,25 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.*
+import io.ktor.application.ApplicationCall as KApplicationCall
 
 fun <T> T?.enforceNotNull(): T {
-    if (this == null) {
-        throw ResponseException(HttpStatusCode.BadRequest, cause = NullPointerException())
-    }
-
-    return this
+    return this ?: throw ResponseException(HttpStatusCode.BadRequest, NullPointerException())
 }
 
 class ResponseScope(
-    val call: ApplicationCall,
+    private val call: KApplicationCall,
     private val incoming: Flow<Frame>?,
     private val json: Json,
 ) {
     private var fields: Map<String, JsonElement>? = null
+
+    fun path(key: String): String {
+        return call.parameters[key]!!
+    }
 
     fun header(key: String): String? {
         return call.request.header(key)
@@ -60,8 +63,8 @@ class ResponseScope(
         if (fields == null) {
             val contentType = call.request.contentType()
 
-            if (contentType != ContentType.Application.Json || contentType != ContentType.Any) {
-                throw SerializationException()
+            if (contentType != ContentType.Application.Json && contentType != ContentType.Any) {
+                throw SerializationException("Unsupported Content-Type: $contentType")
             }
 
             fields = json.decodeFromString(JsonObject.serializer(), call.receiveText())
@@ -121,16 +124,18 @@ fun <T> Route.withRequest(
     route(path, method) {
         handle {
             try {
-                val response = when (val r = result.mappingToContent(ResponseScope(call, null, json).block())) {
-                    is Content.Binary -> ByteArrayContent(r.bytes, r.contentType)
-                    is Content.Text -> TextContent(r.text, r.contentType)
-                }
+                withContext(ApplicationCall(call)) {
+                    val response = when (val r = result.mappingToContent(ResponseScope(call, null, json).block())) {
+                        is Content.Binary -> ByteArrayContent(r.bytes, r.contentType)
+                        is Content.Text -> TextContent(r.text, r.contentType)
+                    }
 
-                call.respond(response)
+                    call.respond(response)
+                }
             } catch (e: SerializationException) {
-                call.respond(HttpStatusCode.BadRequest)
+                call.respond(HttpStatusCode.BadRequest, e.message ?: "")
             } catch (e: ResponseException) {
-                call.respond(e.status)
+                call.respond(e.status, e.cause?.message ?: "")
             }
         }
     }
@@ -144,20 +149,22 @@ fun <T> Route.withWebSocket(
 ) {
     webSocket(path) {
         try {
-            ResponseScope(call, incoming.consumeAsFlow(), json)
-                .block()
-                .collect {
-                    val frame = when (val c = result.mappingToContent(it)) {
-                        is Content.Binary -> Frame.Binary(false, c.bytes)
-                        is Content.Text -> Frame.Text(c.text)
-                    }
+            withContext(ApplicationCall(call)) {
+                ResponseScope(call, incoming.consumeAsFlow(), json)
+                    .block()
+                    .collect {
+                        val frame = when (val c = result.mappingToContent(it)) {
+                            is Content.Binary -> Frame.Binary(true, c.bytes)
+                            is Content.Text -> Frame.Text(c.text)
+                        }
 
-                    send(frame)
-                }
+                        send(frame)
+                    }
+            }
         } catch (e: SerializationException) {
-            call.respond(HttpStatusCode.BadRequest)
+            call.respond(HttpStatusCode.BadRequest, e.message ?: "")
         } catch (e: ResponseException) {
-            call.respond(e.status)
+            call.respond(e.status, e.cause?.message ?: "")
         }
     }
 }
