@@ -24,7 +24,7 @@ fun KSValueParameter.collectArgument(): Argument.Raw {
 }
 
 fun Argument.Raw.refine(): Argument {
-    val annotations = listOfNotNull(header, field, body, query, path)
+    val annotations = listOfNotNull(header, field, body, query, path, outgoing)
     require(annotations.size == 1) {
         "Duplicate or empty argument descriptors: $annotations"
     }
