@@ -123,6 +123,16 @@ fun Request.Raw.refine(resolver: Resolver): Request {
                 "@Field should not use with @Body or @Outgoing"
             }
         }
+        if (groupedArgs.containsKey(Argument.Descriptor.Body::class.java) && groupedArgs.containsKey(Argument.Descriptor.Outgoing::class.java)) {
+            require(!groupedArgs.containsKey(Argument.Descriptor.Field::class.java)) {
+                "Duplicate @Body and @Outgoing"
+            }
+        }
+        if (groupedArgs.containsKey(Argument.Descriptor.Body::class.java) || groupedArgs.containsKey(Argument.Descriptor.Field::class.java)) {
+            require(method != Request.Method.GET) {
+                "Http method GET should not contains Body"
+            }
+        }
     }
 
     val placeholders = args.filter { it.descriptor is Argument.Descriptor.Path }
