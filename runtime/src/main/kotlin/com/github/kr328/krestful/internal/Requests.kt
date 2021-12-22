@@ -11,7 +11,6 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.http.cio.websocket.*
 import io.ktor.http.content.*
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -29,7 +28,7 @@ import io.ktor.client.features.ResponseException as KResponseException
 class RequestScope {
     private val queries: MutableMap<String, String> = mutableMapOf()
     private val headers: MutableMap<String, String> = mutableMapOf()
-    private val fields: MutableMap<String, JsonElement> = mutableMapOf()
+    private var fields: MutableMap<String, JsonElement>? = mutableMapOf()
     private var body: Content? = null
     internal var outgoing: Flow<Content>? = null
 
@@ -78,6 +77,10 @@ class RequestScope {
     }
 
     fun <T> field(key: String, value: T, mapping: Mapping<T>) {
+        val fields = fields ?: mutableMapOf()
+
+        this.fields = fields
+
         when (mapping) {
             Mapping.ContentBinary -> {
                 val content = (value as Content.Binary)
@@ -118,6 +121,10 @@ class RequestScope {
 
     @JvmName("fieldNullable")
     fun <T> field(key: String, value: T?, mapping: Mapping<T>) {
+        val fields = fields ?: mutableMapOf()
+
+        this.fields = fields
+
         if (value != null) {
             field(key, value, mapping)
         }
@@ -135,12 +142,13 @@ class RequestScope {
         }
 
         val body = body
+        val fields = fields
         if (body != null) {
             request.body = when (body) {
                 is Content.Binary -> ByteArrayContent(body.bytes, body.contentType)
                 is Content.Text -> TextContent(body.text, body.contentType)
             }
-        } else if (fields.isNotEmpty()) {
+        } else if (fields != null) {
             request.body = TextContent(
                 json.encodeToString(JsonObject.serializer(), JsonObject(fields)),
                 ContentType.Application.Json
@@ -223,33 +231,31 @@ fun <T> HttpClient.webSocket(
                     accept(ContentType.Application.Json)
                 }
             }) {
-                try {
-                    val out = metadata.outgoing
-                    if (out != null) {
-                        launch {
-                            out.collect {
-                                val frame = when (it) {
-                                    is Content.Binary -> Frame.Binary(false, it.bytes)
-                                    is Content.Text -> Frame.Text(it.text)
-                                }
-
-                                send(frame)
+                val out = metadata.outgoing
+                if (out != null) {
+                    launch {
+                        out.collect {
+                            val frame = when (it) {
+                                is Content.Binary -> Frame.Binary(false, it.bytes)
+                                is Content.Text -> Frame.Text(it.text)
                             }
-                        }
-                    }
 
-                    val contentType = call.response.contentType() ?: ContentType.Any
-
-                    incoming.receiveAsFlow().collect {
-                        val content = when (it) {
-                            is Frame.Binary -> Content.Binary(it.data, contentType)
-                            is Frame.Text -> Content.Text(it.data.toString(Charsets.UTF_8), contentType)
-                            else -> error("Unsupported frame: $it")
+                            send(frame)
                         }
-                        emit(returning.mappingToValue(content))
+
+                        close()
                     }
-                } finally {
-                    cancel()
+                }
+
+                val contentType = call.response.contentType() ?: ContentType.Any
+
+                incoming.receiveAsFlow().collect {
+                    val content = when (it) {
+                        is Frame.Binary -> Content.Binary(it.data, contentType)
+                        is Frame.Text -> Content.Text(it.data.toString(Charsets.UTF_8), contentType)
+                        else -> error("Unsupported frame: $it")
+                    }
+                    emit(returning.mappingToValue(content))
                 }
             }
         } catch (e: KResponseException) {
