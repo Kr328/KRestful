@@ -151,7 +151,7 @@ class RequestScope {
         } else if (fields != null) {
             request.body = TextContent(
                 json.encodeToString(JsonObject.serializer(), JsonObject(fields)),
-                ContentType.Application.Json
+                ContentType.Application.Json.withCharset(Charsets.UTF_8)
             )
         }
     }

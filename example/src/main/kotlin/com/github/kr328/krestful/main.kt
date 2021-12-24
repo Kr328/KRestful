@@ -126,7 +126,7 @@ suspend fun main() = coroutineScope {
 
         println(api.proxy("DIRECT"))
 
-        println(api.createProxy("GLOBAL", 114514))
+        println(api.createProxy("太好听了吧", 114514))
 
         println(api.headers("114514", "REJECT"))
 

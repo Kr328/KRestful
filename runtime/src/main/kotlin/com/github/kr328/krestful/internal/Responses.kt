@@ -61,7 +61,7 @@ class ResponseScope(
 
     suspend fun <T> field(key: String, mapping: Mapping<T>): T? {
         if (fields == null) {
-            val contentType = call.request.contentType()
+            val contentType = call.request.contentType().withoutParameters()
 
             if (contentType != ContentType.Application.Json && contentType != ContentType.Any) {
                 throw SerializationException("Unsupported Content-Type: $contentType")
