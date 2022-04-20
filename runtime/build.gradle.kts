@@ -1,19 +1,25 @@
 plugins {
     kotlin("jvm")
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
+    kotlin("plugin.serialization")
+    `maven-publish`
 }
 
 dependencies {
-    compileOnly(deps.ktor.client.core)
-    compileOnly(deps.ktor.client.websockets)
-    compileOnly(deps.ktor.server.core)
-    compileOnly(deps.ktor.server.websockets)
-    compileOnly(deps.kotlinx.serialization.core)
-    compileOnly(deps.kotlinx.serialization.json)
-    compileOnly(deps.kotlinx.coroutine)
+    compileOnly(libs.ktor.client.core)
+    compileOnly(libs.ktor.client.websockets)
+    compileOnly(libs.ktor.server.core)
+    compileOnly(libs.ktor.server.websockets)
+    compileOnly(libs.kotlinx.serialization.core)
+    compileOnly(libs.kotlinx.serialization.json)
+    compileOnly(libs.kotlinx.coroutine)
+}
+
+publishing {
+    publications {
+        create(project.name, MavenPublication::class) {
+            from(components["java"])
+
+            artifact(tasks["sourcesJar"])
+        }
+    }
 }

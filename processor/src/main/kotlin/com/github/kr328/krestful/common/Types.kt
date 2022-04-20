@@ -23,7 +23,7 @@ object Types {
     val Dispatchers = ClassName("kotlinx.coroutines", "Dispatchers")
     val CoroutineContext = ClassName("kotlin.coroutines", "CoroutineContext")
     val Url = ClassName("io.ktor.http", "Url")
-    val Route = ClassName("io.ktor.routing", "Route")
+    val Route = ClassName("io.ktor.server.routing", "Route")
     val HttpClient = ClassName("io.ktor.client", "HttpClient")
     val HttpMethod = ClassName("io.ktor.http", "HttpMethod")
     val Serializable = ClassName("kotlinx.serialization", "Serializable")

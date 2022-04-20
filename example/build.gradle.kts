@@ -4,26 +4,26 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+dependencies {
+    ksp(project(":processor"))
+
+    implementation(project(":runtime"))
+
+    implementation(libs.kotlinx.coroutine)
+    implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.websockets)
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.websockets)
+}
+
 kotlin {
     sourceSets {
         named("main") {
             kotlin.srcDir(buildDir.resolve("generated/ksp/$name/kotlin"))
         }
     }
-}
-
-dependencies {
-    ksp(project(":processor"))
-
-    implementation(project(":runtime"))
-
-    implementation(deps.kotlinx.coroutine)
-    implementation(deps.kotlinx.serialization.core)
-    implementation(deps.kotlinx.serialization.json)
-    implementation(deps.ktor.client.core)
-    implementation(deps.ktor.client.okhttp)
-    implementation(deps.ktor.client.websockets)
-    implementation(deps.ktor.server.core)
-    implementation(deps.ktor.server.netty)
-    implementation(deps.ktor.server.websockets)
 }

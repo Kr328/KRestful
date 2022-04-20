@@ -1,31 +1,23 @@
 package com.github.kr328.krestful.internal
 
-import com.github.kr328.krestful.ApplicationCall
 import com.github.kr328.krestful.Content
-import com.github.kr328.krestful.ResponseException
-import io.ktor.application.*
+import com.github.kr328.krestful.RemoteException
 import io.ktor.http.*
-import io.ktor.http.cio.websocket.*
 import io.ktor.http.content.*
-import io.ktor.request.*
-import io.ktor.response.*
-import io.ktor.routing.*
+import io.ktor.server.application.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.*
-import io.ktor.application.ApplicationCall as KApplicationCall
 
-fun <T> T?.enforceNotNull(): T {
-    return this ?: throw ResponseException(HttpStatusCode.BadRequest, NullPointerException())
-}
-
-class ResponseScope(
-    private val call: KApplicationCall,
+class RequestExtractor(
+    private val call: ApplicationCall,
     private val incoming: Flow<Frame>?,
     private val json: Json,
 ) {
@@ -114,28 +106,28 @@ class ResponseScope(
     }
 }
 
+fun <T> T?.enforceNotNull(): T {
+    return this ?: throw RemoteException(HttpStatusCode.BadRequest)
+}
+
 fun <T> Route.withRequest(
     json: Json,
     method: HttpMethod,
     path: String,
     result: Mapping<T>,
-    block: suspend ResponseScope.() -> T
+    block: suspend RequestExtractor.() -> T
 ) {
     route(path, method) {
         handle {
             try {
-                withContext(ApplicationCall(call)) {
-                    val response = when (val r = result.mappingToContent(ResponseScope(call, null, json).block())) {
-                        is Content.Binary -> ByteArrayContent(r.bytes, r.contentType)
-                        is Content.Text -> TextContent(r.text, r.contentType)
-                    }
-
-                    call.respond(response)
+                val response = when (val r = result.mappingToContent(RequestExtractor(call, null, json).block())) {
+                    is Content.Binary -> ByteArrayContent(r.bytes, r.contentType)
+                    is Content.Text -> TextContent(r.text, r.contentType)
                 }
-            } catch (e: SerializationException) {
-                call.respond(HttpStatusCode.BadRequest, e.message ?: "")
-            } catch (e: ResponseException) {
-                call.respond(e.status, e.cause?.message ?: "")
+
+                call.respond(response)
+            } catch (e: RemoteException) {
+                call.respondRemoteException(e)
             }
         }
     }
@@ -145,26 +137,40 @@ fun <T> Route.withWebSocket(
     json: Json,
     path: String,
     result: Mapping<T>,
-    block: ResponseScope.() -> Flow<T>
+    block: RequestExtractor.() -> Flow<T>
 ) {
     webSocket(path) {
         try {
-            withContext(ApplicationCall(call)) {
-                ResponseScope(call, incoming.consumeAsFlow(), json)
-                    .block()
-                    .collect {
-                        val frame = when (val c = result.mappingToContent(it)) {
-                            is Content.Binary -> Frame.Binary(true, c.bytes)
-                            is Content.Text -> Frame.Text(c.text)
-                        }
-
-                        send(frame)
+            RequestExtractor(call, incoming.consumeAsFlow(), json)
+                .block()
+                .collect {
+                    val frame = when (val c = result.mappingToContent(it)) {
+                        is Content.Binary -> Frame.Binary(true, c.bytes)
+                        is Content.Text -> Frame.Text(c.text)
                     }
-            }
-        } catch (e: SerializationException) {
-            call.respond(HttpStatusCode.BadRequest, e.message ?: "")
-        } catch (e: ResponseException) {
-            call.respond(e.status, e.cause?.message ?: "")
+
+                    send(frame)
+                }
+        } catch (e: RemoteException) {
+            call.respondRemoteException(e)
         }
     }
+}
+
+private suspend fun ApplicationCall.respondRemoteException(e: RemoteException) {
+    val body = Json.Default.encodeToString(
+        JsonObject.serializer(),
+        JsonObject(e.extras.mapValues { JsonPrimitive(it.value) })
+    )
+
+    respond(
+        e.status,
+        TextContent(
+            body,
+            ContentType.Application.Json.withParameter(
+                CONTENT_TYPE_PARAMETER_CLASS_NAME,
+                RemoteException::class.java.name
+            )
+        )
+    )
 }

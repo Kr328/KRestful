@@ -33,9 +33,7 @@ fun KSClassDeclaration.generateClientFile(requests: List<Request>): FileSpec {
             val (format: String, args: Array<Any>) = if (request.method == Request.Method.WebSocket) {
                 val format = """
                         return %M(
-                          context = context,
-                          json = json,
-                          url = baseUrl,
+                          baseUrl = baseUrl,
                           path = %L,
                           returning = %L,
                         )
@@ -50,9 +48,7 @@ fun KSClassDeclaration.generateClientFile(requests: List<Request>): FileSpec {
             } else {
                 val format = """
                         return %M(
-                          context = context,
-                          json = json,
-                          url = baseUrl,
+                          baseUrl = baseUrl,
                           path = %L,
                           method = %L,
                           returning = %L,
@@ -96,7 +92,6 @@ fun KSClassDeclaration.generateClientFile(requests: List<Request>): FileSpec {
         .returns(thisName)
         .addParameter("baseUrl", Types.Url)
         .addParameter("json", Types.Json, "%T", Types.Json)
-        .addParameter("context", Types.CoroutineContext, "%T.Default", Types.Dispatchers)
         .addCode {
             addStatement("return %L", clazz.build())
         }

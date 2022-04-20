@@ -1,41 +1,50 @@
 @file:Suppress("UnstableApiUsage")
 
-enableFeaturePreview("VERSION_CATALOGS")
-
 rootProject.name = "krestful"
 
 include("runtime")
 include("example")
 include("processor")
 
-dependencyResolutionManagement {
-    versionCatalogs {
-        create("deps") {
-            val kotlin = "1.6.0"
-            val serialization = "1.3.1"
-            val coroutine = "1.5.2"
-            val ktor = "1.6.7"
-            val autoservice = "1.0.1"
-            val ksp = "1.6.0-1.0.2"
-            val ktpoet = "1.10.2"
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        google()
+        mavenLocal()
+    }
+}
 
-            alias("build-kotlin-lang").to("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin")
-            alias("build-kotlin-serialization").to("org.jetbrains.kotlin:kotlin-serialization:$kotlin")
-            alias("build-ksp").to("com.google.devtools.ksp:symbol-processing-gradle-plugin:$ksp")
-            alias("kotlinx-serialization-core").to("org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization")
-            alias("kotlinx-serialization-json").to("org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization")
-            alias("kotlinx-coroutine").to("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutine")
-            alias("ktor-client-core").to("io.ktor:ktor-client-core:$ktor")
-            alias("ktor-client-okhttp").to("io.ktor:ktor-client-okhttp:$ktor")
-            alias("ktor-client-websockets").to("io.ktor:ktor-client-websockets:$ktor")
-            alias("ktor-server-core").to("io.ktor:ktor-server-core:$ktor")
-            alias("ktor-server-netty").to("io.ktor:ktor-server-netty:$ktor")
-            alias("ktor-server-websockets").to("io.ktor:ktor-websockets:$ktor")
-            alias("autoservice-processor").to("com.google.auto.service:auto-service:$autoservice")
-            alias("autoservice-annotations").to("com.google.auto.service:auto-service-annotations:$autoservice")
-            alias("ksp-api").to("com.google.devtools.ksp:symbol-processing-api:$ksp")
-            alias("kotlinpoet-core").to("com.squareup:kotlinpoet:$ktpoet")
-            alias("kotlinpoet-ksp").to("com.squareup:kotlinpoet-ksp:$ktpoet")
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        google()
+        mavenLocal()
+    }
+    versionCatalogs {
+        create("libs") {
+            val kotlin = "1.6.20"
+            val ksp = "$kotlin-1.0.5"
+            val serialization = "1.3.2"
+            val coroutine = "1.6.1"
+            val ktor = "2.0.0"
+            val autoservice = "1.0.1"
+            val ktpoet = "1.11.0"
+
+            library("kotlinx-serialization-core", "org.jetbrains.kotlinx:kotlinx-serialization-core:$serialization")
+            library("kotlinx-serialization-json", "org.jetbrains.kotlinx:kotlinx-serialization-json:$serialization")
+            library("kotlinx-coroutine", "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutine")
+            library("ktor-client-core", "io.ktor:ktor-client-core:$ktor")
+            library("ktor-client-okhttp", "io.ktor:ktor-client-okhttp:$ktor")
+            library("ktor-client-websockets", "io.ktor:ktor-client-websockets:$ktor")
+            library("ktor-server-core", "io.ktor:ktor-server-core:$ktor")
+            library("ktor-server-netty", "io.ktor:ktor-server-netty:$ktor")
+            library("ktor-server-websockets", "io.ktor:ktor-server-websockets:$ktor")
+            library("autoservice-processor", "com.google.auto.service:auto-service:$autoservice")
+            library("autoservice-annotations", "com.google.auto.service:auto-service-annotations:$autoservice")
+            library("ksp-api", "com.google.devtools.ksp:symbol-processing-api:$ksp")
+            library("kotlinpoet-core", "com.squareup:kotlinpoet:$ktpoet")
+            library("kotlinpoet-ksp", "com.squareup:kotlinpoet-ksp:$ktpoet")
         }
     }
 }

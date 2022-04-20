@@ -1,79 +1,70 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath(deps.build.kotlin.lang)
-        classpath(deps.build.kotlin.serialization)
-        classpath(deps.build.ksp)
-    }
-}
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-allprojects {
-    group = "com.github.kr328.krestful"
-    version = "1.1"
+plugins {
+    val kt = "1.6.20"
+    val ksp = "$kt-1.0.5"
 
-    repositories {
-        mavenCentral()
-    }
+    kotlin("jvm") version kt apply false
+    kotlin("kapt") version kt apply false
+    kotlin("plugin.serialization") version kt apply false
+    id("com.google.devtools.ksp") version ksp apply false
 }
 
 subprojects {
-    val publish = setOf("processor", "runtime")
+    group = "com.github.kr328.krestful"
+    version = "1.2"
 
-    if (name in publish) {
-        println("- Add publishing to module '${name}'")
-
-        apply(plugin = "maven-publish")
-
-        afterEvaluate {
-            val artifactId = name
-
-            val sourcesJar = tasks.register("sourcesJar", type = Jar::class) {
-                archiveClassifier.set("sources")
-                from(project.extensions.getByType(SourceSetContainer::class.java).named("main").get().allSource)
-            }
-
-            extensions.configure<PublishingExtension> {
-                repositories {
-                    mavenLocal()
-                    maven {
-                        name = "kr328app"
-                        url = uri("https://maven.kr328.app/releases")
-                        credentials(PasswordCredentials::class.java)
-                    }
+    plugins.withId("maven-publish") {
+        extensions.configure<PublishingExtension> {
+            repositories {
+                mavenLocal()
+                maven {
+                    name = "kr328app"
+                    url = uri("https://maven.kr328.app/releases")
+                    credentials(PasswordCredentials::class.java)
                 }
-                publications {
-                    create("maven", type = MavenPublication::class) {
-                        this.artifactId = artifactId
-                        this.version = project.version.toString()
-
-                        from(components["java"])
-
-                        artifact(sourcesJar)
-
-                        pom {
-                            name.set("KRestful")
-                            description.set("A reflectless retrofit implementation for Ktor")
+            }
+            publications {
+                withType(MavenPublication::class) {
+                    pom {
+                        name.set("KRestful")
+                        description.set("A reflectless retrofit implementation for Ktor")
+                        url.set("https://github.com/Kr328/KRestful")
+                        licenses {
+                            license {
+                                name.set("MIT License")
+                                url.set("https://github.com/Kr328/KRestful/blob/main/LICENSE")
+                            }
+                        }
+                        developers {
+                            developer {
+                                name.set("Kr328")
+                            }
+                        }
+                        scm {
+                            connection.set("scm:git:https://github.com/Kr328/KRestful.git")
                             url.set("https://github.com/Kr328/KRestful")
-                            licenses {
-                                license {
-                                    name.set("MIT License")
-                                    url.set("https://github.com/Kr328/KRestful/blob/main/LICENSE")
-                                }
-                            }
-                            developers {
-                                developer {
-                                    name.set("Kr328")
-                                }
-                            }
-                            scm {
-                                connection.set("scm:git:https://github.com/Kr328/KRestful.git")
-                                url.set("https://github.com/Kr328/KRestful")
-                            }
                         }
                     }
                 }
+            }
+        }
+    }
+    plugins.withId("java") {
+        extensions.configure<JavaPluginExtension> {
+            sourceCompatibility = JavaVersion.VERSION_11
+            targetCompatibility = JavaVersion.VERSION_11
+        }
+
+        task("sourcesJar", Jar::class) {
+            archiveClassifier.set("sources")
+            from(project.extensions.getByType(SourceSetContainer::class).named("main").get().allSource)
+        }
+    }
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        tasks.withType(KotlinCompile::class) {
+            kotlinOptions {
+                jvmTarget = "11"
             }
         }
     }

@@ -3,29 +3,27 @@ package com.github.kr328.krestful
 import com.github.kr328.krestful.model.Configs
 import com.github.kr328.krestful.model.Proxy
 import com.github.kr328.krestful.model.Traffic
-import io.ktor.application.*
 import io.ktor.client.*
 import io.ktor.client.engine.okhttp.*
-import io.ktor.client.features.websocket.*
 import io.ktor.http.*
-import io.ktor.request.*
-import io.ktor.routing.*
+import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.take
 import kotlinx.serialization.json.Json
 import kotlin.system.exitProcess
-import io.ktor.websocket.WebSockets as SWebSockets
+import io.ktor.client.plugins.websocket.WebSockets.Plugin as ClientWebSockets
 
 suspend fun main() = coroutineScope {
     embeddedServer(Netty, port = 10880) {
-        install(SWebSockets)
+        install(WebSockets)
 
         routing {
             withExampleApiDelegate(object : ExampleApi {
@@ -62,7 +60,7 @@ suspend fun main() = coroutineScope {
                         return Proxy("DIRECT", "", 0, "1919810")
                     }
 
-                    throw ResponseException(HttpStatusCode.NotFound)
+                    throw RemoteException(HttpStatusCode.NotFound)
                 }
 
                 override fun traffic(): Flow<Traffic> {
@@ -84,15 +82,11 @@ suspend fun main() = coroutineScope {
                 }
 
                 override suspend fun queries(name: String, server: String): String {
-                    val call = currentCoroutineContext()[ApplicationCall]!!
-
-                    println(call.request.uri)
-
                     return "$name/$server"
                 }
 
-                override fun echo(input: Flow<String>): Flow<String> {
-                    return input
+                override fun echo(input: Flow<String>, limit: String): Flow<String> {
+                    return input.take(limit.toInt())
                 }
 
                 override suspend fun nullable(query: String?, header: String?, field: String?): String {
@@ -103,7 +97,7 @@ suspend fun main() = coroutineScope {
     }.start()
 
     val client = HttpClient(OkHttp) {
-        install(WebSockets)
+        install(ClientWebSockets)
     }
 
     val api = client.createExampleApiProxy(
@@ -138,7 +132,7 @@ suspend fun main() = coroutineScope {
             println(it)
         }
 
-        api.echo(flowOf("aaaaa", "bbbbbb", "cccccc", "ddddddd")).collect {
+        api.echo(flowOf("aaaaa", "bbbbbb", "cccccc", "ddddddd"), "4").collect {
             println(it)
         }
     } catch (e: Exception) {

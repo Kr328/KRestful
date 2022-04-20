@@ -3,21 +3,31 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm")
     kotlin("kapt")
-}
-
-tasks.withType<KotlinCompile>().configureEach {
-    kotlinOptions {
-        freeCompilerArgs = freeCompilerArgs + "-opt-in=com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview"
-        jvmTarget = "1.8"
-    }
+    `maven-publish`
 }
 
 dependencies {
-    kapt(deps.autoservice.processor)
+    kapt(libs.autoservice.processor)
 
-    compileOnly(deps.autoservice.annotations)
+    compileOnly(libs.autoservice.annotations)
 
-    implementation(deps.ksp.api)
-    implementation(deps.kotlinpoet.core)
-    implementation(deps.kotlinpoet.ksp)
+    implementation(libs.ksp.api)
+    implementation(libs.kotlinpoet.core)
+    implementation(libs.kotlinpoet.ksp)
+}
+
+publishing {
+    publications {
+        create(project.name, MavenPublication::class) {
+            from(components["java"])
+
+            artifact(tasks["sourcesJar"])
+        }
+    }
+}
+
+tasks.withType<KotlinCompile> {
+    kotlinOptions {
+        freeCompilerArgs = freeCompilerArgs + "-opt-in=com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview"
+    }
 }

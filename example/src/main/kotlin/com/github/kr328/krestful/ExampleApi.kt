@@ -36,7 +36,7 @@ interface ExampleApi {
     suspend fun queries(@Query name: String, @Query("ss") server: String): String
 
     @WebSocket("/echo")
-    fun echo(@Outgoing input: Flow<String>): Flow<String>
+    fun echo(@Outgoing input: Flow<String>, @Query limit: String): Flow<String>
 
     @POST("/nullable")
     suspend fun nullable(@Query query: String?, @Header header: String?, @Field field: String?): String
