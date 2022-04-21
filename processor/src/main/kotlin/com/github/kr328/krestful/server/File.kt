@@ -12,7 +12,7 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 
-fun KSClassDeclaration.generateServerFile(requests: List<Request>): FileSpec {
+fun KSClassDeclaration.generateServerFile(basePath: String, requests: List<Request>): FileSpec {
     val thisName = toClassName()
 
     val factory = FunSpec.builder("with${thisName.simpleName}Delegate")
@@ -23,70 +23,70 @@ fun KSClassDeclaration.generateServerFile(requests: List<Request>): FileSpec {
         .addParameter("json", Types.Json, "%T", Types.Json)
 
     factory.addCode {
-        for (request in requests) {
-            val (format, args) = if (request.method == Request.Method.WebSocket) {
-                val format = """
+        controlFlow("%M(%S)", Members.route, basePath) {
+            for (request in requests) {
+                val (format, args) = if (request.method == Request.Method.WebSocket) {
+                    val format = """
                         %M(
-                          json = json,
                           path = %L,
                           result = %L,
                         )
                     """.trimIndent()
-                val args = arrayOf(
-                    Members.withWebSocket,
-                    request.path.urlCode,
-                    request.returning.typeArguments[0].mappingCode
-                )
+                    val args = arrayOf(
+                        Members.withWebSocket,
+                        request.path.urlCode,
+                        request.returning.typeArguments[0].mappingCode
+                    )
 
-                format to args
-            } else {
-                val format = """
+                    format to args
+                } else {
+                    val format = """
                         %M(
-                          json = json,
                           method = %L,
                           path = %L,
                           result = %L,
                         )
                     """.trimIndent()
-                val args = arrayOf(
-                    Members.withRequest,
-                    request.method.gettingCode,
-                    request.path.urlCode,
-                    request.returning.mappingCode
-                )
+                    val args = arrayOf(
+                        Members.withRequest,
+                        request.method.gettingCode,
+                        request.path.urlCode,
+                        request.returning.mappingCode
+                    )
 
-                format to args
-            }
-
-            controlFlow(format, *args) {
-                request.arguments.forEach {
-                    when (it.descriptor) {
-                        Argument.Descriptor.Body -> {
-                            addBody(it.name, it.type)
-                        }
-                        Argument.Descriptor.Outgoing -> {
-                            addOutgoing(it.name, it.type)
-                        }
-                        is Argument.Descriptor.Field -> {
-                            addField(it.name, it.type, it.descriptor.key)
-                        }
-                        is Argument.Descriptor.Header -> {
-                            addHeader(it.name, it.type, it.descriptor.key)
-                        }
-                        is Argument.Descriptor.Query -> {
-                            addQuery(it.name, it.type, it.descriptor.key)
-                        }
-                        is Argument.Descriptor.Path -> {
-                            addPath(it.name, it.descriptor.key)
-                        }
-                    }
+                    format to args
                 }
 
-                addStatement(
-                    "delegate.%N(${request.arguments.indices.joinToString(",") { "%N" }})",
-                    request.name,
-                    *request.arguments.map { it.name }.toTypedArray()
-                )
+                controlFlow(format, *args) {
+                    request.arguments.forEach {
+                        when (it.descriptor) {
+                            Argument.Descriptor.Body -> {
+                                addBody(it.name, it.type)
+                            }
+                            Argument.Descriptor.Outgoing -> {
+                                addOutgoing(it.name, it.type)
+                            }
+                            is Argument.Descriptor.Field -> {
+                                addField(it.name, it.type, it.descriptor.key)
+                            }
+                            is Argument.Descriptor.Header -> {
+                                addHeader(it.name, it.type, it.descriptor.key)
+                            }
+                            is Argument.Descriptor.Query -> {
+                                addQuery(it.name, it.type, it.descriptor.key)
+                            }
+                            is Argument.Descriptor.Path -> {
+                                addPath(it.name, it.descriptor.key)
+                            }
+                        }
+                    }
+
+                    addStatement(
+                        "delegate.%N(${request.arguments.indices.joinToString(",") { "%N" }})",
+                        request.name,
+                        *request.arguments.map { it.name }.toTypedArray()
+                    )
+                }
             }
         }
 

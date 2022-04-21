@@ -6,6 +6,7 @@ import com.github.kr328.krestful.common.collectRequest
 import com.github.kr328.krestful.common.refine
 import com.github.kr328.krestful.server.generateServerFile
 import com.github.kr328.krestful.util.getAllFunctionsExceptAny
+import com.github.kr328.krestful.util.toAnnotation
 import com.google.devtools.ksp.getClassDeclarationByName
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.ClassKind
@@ -34,6 +35,11 @@ class Processor(
                 continue
             }
 
+            val basePath = clazz.annotations
+                .map { it.toAnnotation() }
+                .single { it.type == Types.Restful }
+                .values["path"] as? String ?: ""
+
             val calls = try {
                 clazz.getAllFunctionsExceptAny()
                     .map {
@@ -52,7 +58,7 @@ class Processor(
 
             if (generateClient) {
                 try {
-                    clazz.generateClientFile(calls)
+                    clazz.generateClientFile(basePath, calls)
                         .writeTo(generator, Dependencies(false, clazz.containingFile!!))
                 } catch (e: Exception) {
                     logger.error("Generate client class ${clazz.simpleName.asString()}: $e", symbol)
@@ -61,7 +67,7 @@ class Processor(
 
             if (generateServer) {
                 try {
-                    clazz.generateServerFile(calls)
+                    clazz.generateServerFile(basePath, calls)
                         .writeTo(generator, Dependencies(false, clazz.containingFile!!))
                 } catch (e: Exception) {
                     logger.error("Generate server class ${clazz.simpleName.asString()}: $e", symbol)

@@ -19,7 +19,6 @@ import kotlinx.serialization.json.*
 class RequestExtractor(
     private val call: ApplicationCall,
     private val incoming: Flow<Frame>?,
-    private val json: Json,
 ) {
     private var fields: Map<String, JsonElement>? = null
 
@@ -59,7 +58,7 @@ class RequestExtractor(
                 throw SerializationException("Unsupported Content-Type: $contentType")
             }
 
-            fields = json.decodeFromString(JsonObject.serializer(), call.receiveText())
+            fields = Json.Default.decodeFromString(JsonObject.serializer(), call.receiveText())
         }
 
         val element = fields?.get(key) ?: return null
@@ -111,16 +110,15 @@ fun <T> T?.enforceNotNull(): T {
 }
 
 fun <T> Route.withRequest(
-    json: Json,
-    method: HttpMethod,
     path: String,
+    method: HttpMethod,
     result: Mapping<T>,
     block: suspend RequestExtractor.() -> T
 ) {
     route(path, method) {
         handle {
             try {
-                val response = when (val r = result.mappingToContent(RequestExtractor(call, null, json).block())) {
+                val response = when (val r = result.mappingToContent(RequestExtractor(call, null).block())) {
                     is Content.Binary -> ByteArrayContent(r.bytes, r.contentType)
                     is Content.Text -> TextContent(r.text, r.contentType)
                 }
@@ -134,14 +132,13 @@ fun <T> Route.withRequest(
 }
 
 fun <T> Route.withWebSocket(
-    json: Json,
     path: String,
     result: Mapping<T>,
     block: RequestExtractor.() -> Flow<T>
 ) {
     webSocket(path) {
         try {
-            RequestExtractor(call, incoming.consumeAsFlow(), json)
+            RequestExtractor(call, incoming.consumeAsFlow())
                 .block()
                 .collect {
                     val frame = when (val c = result.mappingToContent(it)) {

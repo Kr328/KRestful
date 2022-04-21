@@ -6,7 +6,7 @@ import com.github.kr328.krestful.model.Proxy
 import com.github.kr328.krestful.model.Traffic
 import kotlinx.coroutines.flow.Flow
 
-@Restful
+@Restful("/api")
 interface ExampleApi {
     @GET("/")
     suspend fun ping(): String

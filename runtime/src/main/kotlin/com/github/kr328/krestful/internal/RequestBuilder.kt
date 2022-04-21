@@ -178,10 +178,14 @@ suspend fun <T> HttpClient.request(
     try {
         val builder = RequestBuilder().apply(builderBlock)
 
-        val response = request(baseUrl) {
+        val response = request {
             this.expectSuccess = true
             this.method = method
-            this.url.appendPathSegments(path)
+            this.url.takeFrom(baseUrl).appendPathSegments(path)
+
+            if (path.lastOrNull() == '/') {
+                this.url.pathSegments += ""
+            }
 
             builder.constructRequest(this)
 
@@ -212,6 +216,10 @@ fun <T> HttpClient.webSocket(
             this.method = HttpMethod.Get
             this.url {
                 takeFrom(baseUrl).appendPathSegments(path)
+
+                if (path.lastOrNull() == '/') {
+                    pathSegments = pathSegments + ""
+                }
 
                 if (!url.protocol.isWebsocket()) {
                     if (url.protocol.isSecure()) {

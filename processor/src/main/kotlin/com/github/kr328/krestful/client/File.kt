@@ -14,7 +14,7 @@ import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 
-fun KSClassDeclaration.generateClientFile(requests: List<Request>): FileSpec {
+fun KSClassDeclaration.generateClientFile(basePath: String, requests: List<Request>): FileSpec {
     val thisName = this.toClassName()
 
     val clazz = TypeSpec.anonymousClassBuilder()
@@ -33,7 +33,7 @@ fun KSClassDeclaration.generateClientFile(requests: List<Request>): FileSpec {
             val (format: String, args: Array<Any>) = if (request.method == Request.Method.WebSocket) {
                 val format = """
                         return %M(
-                          baseUrl = baseUrl,
+                          baseUrl = __baseUrl,
                           path = %L,
                           returning = %L,
                         )
@@ -48,7 +48,7 @@ fun KSClassDeclaration.generateClientFile(requests: List<Request>): FileSpec {
             } else {
                 val format = """
                         return %M(
-                          baseUrl = baseUrl,
+                          baseUrl = __baseUrl,
                           path = %L,
                           method = %L,
                           returning = %L,
@@ -93,7 +93,16 @@ fun KSClassDeclaration.generateClientFile(requests: List<Request>): FileSpec {
         .addParameter("baseUrl", Types.Url)
         .addParameter("json", Types.Json, "%T", Types.Json)
         .addCode {
-            addStatement("return %L", clazz.build())
+            addStatement("""
+                val __baseUrl = %T(baseUrl).%M(%S).build()
+                
+                return %L
+            """.trimIndent(),
+                Types.URLBuilder,
+                Members.appendPathSegments,
+                basePath,
+                clazz.build()
+            )
         }
 
     return FileSpec.builder(thisName.packageName, "${thisName.simpleName}Proxy")
