@@ -55,11 +55,6 @@ subprojects {
             sourceCompatibility = JavaVersion.VERSION_11
             targetCompatibility = JavaVersion.VERSION_11
         }
-
-        task("sourcesJar", Jar::class) {
-            archiveClassifier.set("sources")
-            from(project.extensions.getByType(SourceSetContainer::class).named("main").get().allSource)
-        }
     }
     plugins.withId("org.jetbrains.kotlin.jvm") {
         tasks.withType(KotlinCompile::class) {

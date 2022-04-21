@@ -14,6 +14,11 @@ dependencies {
     compileOnly(libs.kotlinx.coroutine)
 }
 
+task("sourcesJar", Jar::class) {
+    archiveClassifier.set("sources")
+    from(kotlin.sourceSets.getByName("main").kotlin)
+}
+
 publishing {
     publications {
         create(project.name, MavenPublication::class) {
