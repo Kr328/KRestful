@@ -1,5 +1,6 @@
 package com.github.kr328.krestful.internal
 
+import com.github.kr328.krestful.Calling
 import com.github.kr328.krestful.Content
 import com.github.kr328.krestful.RemoteException
 import io.ktor.http.*
@@ -13,6 +14,7 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.*
 
@@ -117,15 +119,17 @@ fun <T> Route.withRequest(
 ) {
     route(path, method) {
         handle {
-            try {
-                val response = when (val r = result.mappingToContent(RequestExtractor(call, null).block())) {
-                    is Content.Binary -> ByteArrayContent(r.bytes, r.contentType)
-                    is Content.Text -> TextContent(r.text, r.contentType)
-                }
+            withContext(Calling(call)) {
+                try {
+                    val response = when (val r = result.mappingToContent(RequestExtractor(call, null).block())) {
+                        is Content.Binary -> ByteArrayContent(r.bytes, r.contentType)
+                        is Content.Text -> TextContent(r.text, r.contentType)
+                    }
 
-                call.respond(response)
-            } catch (e: RemoteException) {
-                call.respondRemoteException(e)
+                    call.respond(response)
+                } catch (e: RemoteException) {
+                    call.respondRemoteException(e)
+                }
             }
         }
     }
@@ -137,19 +141,21 @@ fun <T> Route.withWebSocket(
     block: RequestExtractor.() -> Flow<T>
 ) {
     webSocket(path) {
-        try {
-            RequestExtractor(call, incoming.consumeAsFlow())
-                .block()
-                .collect {
-                    val frame = when (val c = result.mappingToContent(it)) {
-                        is Content.Binary -> Frame.Binary(true, c.bytes)
-                        is Content.Text -> Frame.Text(c.text)
-                    }
+        withContext(Calling(call)) {
+            try {
+                RequestExtractor(call, incoming.consumeAsFlow())
+                    .block()
+                    .collect {
+                        val frame = when (val c = result.mappingToContent(it)) {
+                            is Content.Binary -> Frame.Binary(true, c.bytes)
+                            is Content.Text -> Frame.Text(c.text)
+                        }
 
-                    send(frame)
-                }
-        } catch (e: RemoteException) {
-            call.respondRemoteException(e)
+                        send(frame)
+                    }
+            } catch (e: RemoteException) {
+                call.respondRemoteException(e)
+            }
         }
     }
 }

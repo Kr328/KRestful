@@ -9,6 +9,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import kotlinx.coroutines.coroutineScope
@@ -66,7 +67,7 @@ suspend fun main() = coroutineScope {
                 override fun traffic(): Flow<Traffic> {
                     return flow {
                         repeat(10) {
-                            emit(Traffic(114, 514))
+                            emit(Traffic(Calling.require().call.request.contentLength() ?: 114, 514))
 
                             delay(1000L)
                         }
@@ -82,7 +83,7 @@ suspend fun main() = coroutineScope {
                 }
 
                 override suspend fun queries(name: String, server: String): String {
-                    return "$name/$server"
+                    return Calling.require().call.request.uri
                 }
 
                 override fun echo(input: Flow<String>, limit: String): Flow<String> {
