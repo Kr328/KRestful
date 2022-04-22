@@ -117,7 +117,7 @@ fun <T> Route.withRequest(
     result: Mapping<T>,
     block: suspend RequestExtractor.() -> T
 ) {
-    route(path, method) {
+    route(if (path.all { it == '/' }) "" else path, method) {
         handle {
             withContext(Calling(call)) {
                 try {
@@ -140,7 +140,7 @@ fun <T> Route.withWebSocket(
     result: Mapping<T>,
     block: RequestExtractor.() -> Flow<T>
 ) {
-    webSocket(path) {
+    webSocket(if (path.all { it == '/' }) "" else path) {
         withContext(Calling(call)) {
             try {
                 RequestExtractor(call, incoming.consumeAsFlow())
@@ -154,7 +154,7 @@ fun <T> Route.withWebSocket(
                         send(frame)
                     }
             } catch (e: RemoteException) {
-                call.respondRemoteException(e)
+                throw UnsupportedOperationException("WebSocket do not support RemoteException", e)
             }
         }
     }

@@ -137,10 +137,12 @@ class RequestBuilder {
 
         val body = body
         if (body != null) {
-            builder.setBody(when (body) {
-                is Content.Binary -> ByteArrayContent(body.bytes, body.contentType)
-                is Content.Text -> TextContent(body.text, body.contentType)
-            })
+            builder.setBody(
+                when (body) {
+                    is Content.Binary -> ByteArrayContent(body.bytes, body.contentType)
+                    is Content.Text -> TextContent(body.text, body.contentType)
+                }
+            )
         } else {
             val fields = this@RequestBuilder.fields
             if (fields != null) {
@@ -183,10 +185,6 @@ suspend fun <T> HttpClient.request(
             this.method = method
             this.url.takeFrom(baseUrl).appendPathSegments(path)
 
-            if (path.lastOrNull() == '/') {
-                this.url.pathSegments += ""
-            }
-
             builder.constructRequest(this)
 
             if (returning is Mapping.SerializableJson<*>) {
@@ -208,51 +206,41 @@ fun <T> HttpClient.webSocket(
     returning: Mapping<T>,
     builderBlock: RequestBuilder.() -> Unit,
 ): Flow<T> = flow {
-    try {
-        val builder = RequestBuilder().apply(builderBlock)
+    val builder = RequestBuilder().apply(builderBlock)
 
-        webSocket(request = {
-            this.expectSuccess = true
-            this.method = HttpMethod.Get
-            this.url {
-                takeFrom(baseUrl).appendPathSegments(path)
+    webSocket(request = {
+        this.expectSuccess = true
+        this.method = HttpMethod.Get
+        this.url {
+            takeFrom(baseUrl).appendPathSegments(path)
 
-                if (path.lastOrNull() == '/') {
-                    pathSegments = pathSegments + ""
+            if (!url.protocol.isWebsocket()) {
+                if (url.protocol.isSecure()) {
+                    url.protocol = URLProtocol.WSS
+                } else {
+                    url.protocol = URLProtocol.WS
                 }
-
-                if (!url.protocol.isWebsocket()) {
-                    if (url.protocol.isSecure()) {
-                        url.protocol = URLProtocol.WSS
-                    } else {
-                        url.protocol = URLProtocol.WS
-                    }
-                }
-            }
-
-            builder.constructRequest(this)
-        }) {
-            val session = this
-
-            launch {
-                builder.relayTo(session)
-            }
-
-            val contentType = call.response.contentType() ?: ContentType.Any
-
-            incoming.consumeAsFlow().collect {
-                val content = when (it) {
-                    is Frame.Binary -> Content.Binary(it.data, contentType)
-                    is Frame.Text -> Content.Text(it.data.toString(Charsets.UTF_8), contentType)
-                    else -> error("Unsupported frame: $it")
-                }
-                emit(returning.mappingToValue(content))
             }
         }
-    } catch (e: ResponseException) {
-        e.throwRemoteExceptionIfAvailable()
 
-        throw e
+        builder.constructRequest(this)
+    }) {
+        val session = this
+
+        launch {
+            builder.relayTo(session)
+        }
+
+        val contentType = call.response.contentType() ?: ContentType.Any
+
+        incoming.consumeAsFlow().collect {
+            val content = when (it) {
+                is Frame.Binary -> Content.Binary(it.data, contentType)
+                is Frame.Text -> Content.Text(it.data.toString(Charsets.UTF_8), contentType)
+                else -> error("Unsupported frame: $it")
+            }
+            emit(returning.mappingToValue(content))
+        }
     }
 }
 
