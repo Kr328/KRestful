@@ -14,8 +14,12 @@ import com.squareup.kotlinpoet.ksp.toClassName
 
 fun KSClassDeclaration.generateServerFile(basePath: String, requests: List<Request>): FileSpec {
     val thisName = toClassName()
+    val generateClassName = thisName.reflectionName()
+        .removePrefix(thisName.packageName)
+        .removePrefix(".")
+        .replace('$', '_')
 
-    val factory = FunSpec.builder("with${thisName.simpleName}Delegate")
+    val factory = FunSpec.builder("with${generateClassName}Delegate")
         .addGenerated()
         .receiver(Types.Route)
         .returns(Types.Route)
@@ -93,7 +97,7 @@ fun KSClassDeclaration.generateServerFile(basePath: String, requests: List<Reque
         addStatement("return this")
     }
 
-    return FileSpec.builder(thisName.packageName, "${thisName.simpleName}Delegate")
+    return FileSpec.builder(thisName.packageName, "${generateClassName}Delegate")
         .addSuppress(
             "PARAMETER_NAME_CHANGED_ON_OVERRIDE",
             "RedundantVisibilityModifier",

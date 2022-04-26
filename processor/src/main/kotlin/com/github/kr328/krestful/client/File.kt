@@ -16,6 +16,10 @@ import com.squareup.kotlinpoet.ksp.toClassName
 
 fun KSClassDeclaration.generateClientFile(basePath: String, requests: List<Request>): FileSpec {
     val thisName = this.toClassName()
+    val generateClassName = thisName.reflectionName()
+        .removePrefix(thisName.packageName)
+        .removePrefix(".")
+        .replace('$', '_')
 
     val clazz = TypeSpec.anonymousClassBuilder()
         .addSuperinterface(thisName)
@@ -86,7 +90,7 @@ fun KSClassDeclaration.generateClientFile(basePath: String, requests: List<Reque
         clazz.addFunction(func.build())
     }
 
-    val factory = FunSpec.builder("create${simpleName.asString()}Proxy")
+    val factory = FunSpec.builder("create${generateClassName}Proxy")
         .addGenerated()
         .receiver(Types.HttpClient)
         .returns(thisName)
@@ -105,7 +109,7 @@ fun KSClassDeclaration.generateClientFile(basePath: String, requests: List<Reque
             )
         }
 
-    return FileSpec.builder(thisName.packageName, "${thisName.simpleName}Proxy")
+    return FileSpec.builder(thisName.packageName, "${generateClassName}Proxy")
         .addSuppress(
             "PARAMETER_NAME_CHANGED_ON_OVERRIDE",
             "RedundantVisibilityModifier",
