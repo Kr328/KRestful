@@ -129,6 +129,8 @@ fun <T> Route.withRequest(
                     call.respond(response)
                 } catch (e: RemoteException) {
                     call.respondRemoteException(e)
+                } catch (e: SerializationException) {
+                    call.respond(HttpStatusCode.BadRequest, "")
                 }
             }
         }
@@ -155,6 +157,8 @@ fun <T> Route.withWebSocket(
                     }
             } catch (e: RemoteException) {
                 throw UnsupportedOperationException("WebSocket do not support RemoteException", e)
+            } catch (e: SerializationException) {
+                call.respond(HttpStatusCode.BadRequest, "")
             }
         }
     }

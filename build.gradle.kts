@@ -12,7 +12,7 @@ plugins {
 
 subprojects {
     group = "com.github.kr328.krestful"
-    version = "2.4"
+    version = "2.5"
 
     plugins.withId("maven-publish") {
         extensions.configure<PublishingExtension> {
